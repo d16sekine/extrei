@@ -1,0 +1,15 @@
+{
+  "name": "extrei",
+  "version": "1.0.0",
+  "description": "extract Economic Indicator from web",
+  "main": "extrei.js",
+  "scripts": {
+    "start": "node ./extrei.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sekined",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^0.13.0"
+  }
+}
