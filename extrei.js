@@ -1,12 +1,14 @@
 const puppeteer = require('puppeteer');
 const moment = require('moment');
 const fs = require('fs');
+const os = require('os');
 const eilist_json = require("./eilist.json");
 
 PATH_ROOT = "./";
 
 //FilePath_Output = "./testlist.csv" //テスト用
-FilePath_Output = "C:/Users/Daisuke/AppData/Roaming/MetaQuotes/Terminal/3212703ED955F10C7534BE8497B221F4/MQL4/Files/EIdata.csv"
+FilePath_Home = "C:/Users/"
+FilePath_MT4 = "/AppData/Roaming/MetaQuotes/Terminal/3212703ED955F10C7534BE8497B221F4/MQL4/Files/EIdata.csv"
 // ################
 // ### issue
 // ################
@@ -163,7 +165,14 @@ async function getEIListWithDate(page, url){
     //console.log(eilist_json);
     console.log(finalData);
 
+    const username = os.userInfo().username;
+
+    //console.log(username)
+
+    const FilePath_Output = FilePath_Home + username + FilePath_MT4;
+
     await writeFinalData(finalData,FilePath_Output)
+
 
     browser.close()
   } catch(e) {
@@ -231,7 +240,7 @@ function analyzeWebData(WebData){
 
         retArrayJson.push(hash);
 
-        console.log("hit");
+        //console.log("hit");
 
       }
       
@@ -252,16 +261,14 @@ function writeFinalData(FinalData,filepath){
  
     for(let i = 0; i< FinalData.length; i++){
 
-      strData += String(FinalData[i].date) + "," + String(FinalData[i].rank) + "," + String(FinalData[i].currency) + "," + String(FinalData[i].name) +"\r\n";
+      strData += String(FinalData[i].date) + "," + String(FinalData[i].rank) + "," + String(FinalData[i].currency) + ":" + String(FinalData[i].name) +"\r\n";
   
     }
 
     //最後の1行に固定のデータを書き込み
-    strData += moment().year() + ".12.31 23:59,S,JPY:End Of Data"
+    strData += moment().year() + ".12.31 23:59,Ｓ,JPY:End Of Data"
 
     writeFile(filepath, strData)
-
-    console.log(process.cwd())
   
   }
 
