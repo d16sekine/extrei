@@ -8,11 +8,17 @@ PATH_ROOT = "./";
 // ################
 // ### issue
 // ################
-// ★時刻を扱える形式に変換(splitまで完了)
+// ★FOMC1日目がある
+
+// ★日銀政策金利の処理
+// ★時間のないものを削除？
 
 //################
 //### Complete
 //################
+// ★時刻を扱える形式に変換(splitまで完了)
+// ★最終行に、今年の12月31日を追加
+// ★shortnameの差し替え
 
 //時刻配列の一括変換関数
 function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,開始日,終了月,終了日]
@@ -83,7 +89,7 @@ async function getEIListWithDate(page, url){
   }); //end page.evaluate
 
   //経済指標名の取得
-  const array_title = await page.evaluate(() => {   
+  const array_name = await page.evaluate(() => {   
     
       const nodeTtl =document.querySelectorAll("td.Ttl ");
   
@@ -140,7 +146,7 @@ async function getEIListWithDate(page, url){
     
   console.log("date:",array_date.length)
 
-  console.log("title:",array_title.length)
+  console.log("title:",array_name.length)
 
   console.log("currency:",array_currency.length)
   
@@ -148,7 +154,7 @@ async function getEIListWithDate(page, url){
     
   array_date = transformDateArray(array_date,PeriodWeek);
   
-  const EIjson = await page.evaluate(({array_date, array_currency, array_title}) => {
+  const EIjson = await page.evaluate(({array_date, array_currency, array_name}) => {
     
     let array_json = []
 
@@ -156,7 +162,7 @@ async function getEIListWithDate(page, url){
 
       //var dateArranged = transformDate(String(array_date[i]));
 
-      var single_json = {"date": array_date[i], "currency": array_currency[i], "title": array_title[i]}
+      var single_json = {"date": array_date[i], "currency": array_currency[i], "name": array_name[i]}
 
       array_json.push(single_json);
 
@@ -164,7 +170,7 @@ async function getEIListWithDate(page, url){
 
     return array_json;
         
-  }, {array_date, array_currency, array_title}); //end page.evaluate
+  }, {array_date, array_currency, array_name}); //end page.evaluate
 
   //console.log("EIjson:",EIjson);
 
@@ -230,7 +236,12 @@ async function getPageTitle(page, url){
     
     console.log("resultData: ", resultWebData);
 
+    const finalData = await analyzeWebData(resultWebData);
+
     //console.log(eilist_json);
+    console.log(finalData);
+
+    await writeFinalData(finalData,"./test.csv")
 
     browser.close()
   } catch(e) {
@@ -239,20 +250,63 @@ async function getPageTitle(page, url){
 })()
 
 
+//時刻整形済みのWebデータと指標リストを比較し、書き出しデータを作成
+function analyzeWebData(WebData){
+
+  console.log("WebData.length:", WebData.length);
+
+  let retArrayJson = [];
+
+  for(let i = 0; i< WebData.length; i++){
+
+    for(let j = 0; j < eilist_json.length; j++){
+
+      if(String(WebData[i].name).indexOf(eilist_json[j].name) != -1 && WebData[i].currency == eilist_json[j].country){
+
+        var hash = {"date": WebData[i].date, "currency": WebData[i].currency, "name": WebData[i].name, "rank": eilist_json[j].rank};
+
+        //短縮系の名前がある場合は、shortnameに変更
+        if(eilist_json[j].shortname != "") hash.name = eilist_json[j].shortname;
+
+        retArrayJson.push(hash);
+
+        console.log("hit");
+
+      }
+      
+    }
+
+  }
+
+  return retArrayJson;
+
+}
+
+//時刻整形済みのWebデータと指標リストを比較し、書き出しデータを作成
+function writeFinalData(FinalData,filepath){
+  
+    console.log("FinalData.length:", FinalData.length);
+
+    let strData = "";
+ 
+    for(let i = 0; i< FinalData.length; i++){
+
+      strData += String(FinalData[i].date) + "," + String(FinalData[i].rank) + "," + String(FinalData[i].currency) + "," + String(FinalData[i].name) +"\r\n";
+  
+    }
+
+    strData += moment().year() + ".12.31 23:59,S,JPY:End Of Data"
+
+    writeFile(filepath, strData)
+  
+  }
+
+  
 //ファイルの追記関数
-function appendFile(path, data) {
-  fs.appendFile(path, data, function (err) {
+function writeFile(path, data) {
+  fs.writeFile(path, data, function (err) {
     if (err) {
         throw err;
     }
   });
-}
-
-function analyzeData(WebData){
-
-
-
-
-
-  
 }
