@@ -1,6 +1,7 @@
-const puppeteer = require('puppeteer')
-const moment = require('moment')
+const puppeteer = require('puppeteer');
+const moment = require('moment');
 const fs = require('fs');
+const eilist_json = require("./eilist.json");
 
 PATH_ROOT = "./";
 
@@ -13,32 +14,49 @@ PATH_ROOT = "./";
 //### Complete
 //################
 
-//時刻変換関数
-function transformDate(strdate) {
+//時刻配列の一括変換関数
+function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,開始日,終了月,終了日]
 
-  //不要文字列の整形
-  strdate = strdate.replace(/\n/g,"");
-  strdate = strdate.replace(/ /g,"");
-
-  let array = strdate.split("日");
-
-  //console.log(array[0])
-
+  let retArray = [];
   let now = moment();
-  let year = now.year();
-  let month = now.month() + 1;
+
+  for(let i = 0; i< DateArray.length; i++){
+    
+    var strdate = String(DateArray[i]);
+
+    //不要文字列の整形
+    strdate = strdate.replace(/\n/g,"");
+    strdate = strdate.replace(/ /g,"");
+
+    let array = strdate.split("日");
+
+    let year = now.year();
+    let month = now.month() + 1;
+    let day = array[0];
+
+    //指標日が開始日よりも小さい => 月またぎあり
+    if(day <= PeriodWeek[1]){
+      month += 1;
+
+      if(month == 13) month = 1;
+    }
+       
+    var strdate_arranged = year + "." + month + "." + array[0] + " " + array[1]; 
+
+    retArray.push(strdate_arranged)
   
-  //console.log(now);
+  }
+   
+    return retArray;
 
-  let retTime = year + "." + month + "." + array[0] + " " + array[1]; 
-
-  return retTime;
 }
 
 //Webページにアクセスして、
 async function getEIListWithDate(page, url){
   
   await page.goto(url,{waitUntil:"networkidle2"}); // ページへ移動
+
+  await page.waitFor(3000); //ページロードを待つ
   
   let array_date = await page.evaluate(() => {   
 
@@ -99,16 +117,24 @@ async function getEIListWithDate(page, url){
     
       const nodePeriod =document.querySelector("span#periodWeek");
 
+      let retArray = [];
+
       var tempPeriod = nodePeriod.innerHTML;
       tempPeriod = tempPeriod.replace(/<small>/g, "");
       tempPeriod = tempPeriod.replace(/<\/small>/g, "");
       tempPeriod = tempPeriod.replace(/ /g, "");
+      tempPeriod = tempPeriod.replace(/\n/g, "");
+      tempPeriod = tempPeriod.replace(/　/g, "");
+      tempPeriod = tempPeriod.replace(/\t/g, "");
+      tempPeriod = tempPeriod.replace(/日（.）/g, "");
 
-      array_period = tempPeriod.split("～");
+      let tempArray = tempPeriod.split("～");
+      let tempArray_a = tempArray[0].split("月");
+      let tempArray_b = tempArray[1].split("月");
 
-      const retPeriod = array_period[0]
+      retArray.push(tempArray_a[0],tempArray_a[1],tempArray_b[0],tempArray_b[1]);
 
-      return retPeriod;
+      return retArray;
         
   }); //end page.evaluate
     
@@ -119,17 +145,9 @@ async function getEIListWithDate(page, url){
   console.log("currency:",array_currency.length)
   
   console.log("periodWeek:",PeriodWeek);
-   
-  //時刻の整形
-  for(let i = 0; i< array_date.length; i++){
-
-    array_date[i] = transformDate(String(array_date[i]));
     
-  }
-    
+  array_date = transformDateArray(array_date,PeriodWeek);
   
-
-
   const EIjson = await page.evaluate(({array_date, array_currency, array_title}) => {
     
     let array_json = []
@@ -148,7 +166,7 @@ async function getEIListWithDate(page, url){
         
   }, {array_date, array_currency, array_title}); //end page.evaluate
 
-  console.log("EIjson:",EIjson);
+  //console.log("EIjson:",EIjson);
 
   return EIjson;
 }
@@ -203,13 +221,16 @@ async function getPageTitle(page, url){
     const browser = await puppeteer.launch()
     const page = await browser.newPage()
 
-    const resultData = await getEIListWithDate(page, 'https://min-fx.jp/market/indicators/')
+    const resultWebData = await getEIListWithDate(page, 'https://min-fx.jp/market/indicators/')
     //const resultData = await getEIList(page, 'https://min-fx.jp/market/indicators/') //動作確認用テスト
     //const resultData = await getPageTitle(page, 'https://min-fx.jp/market/indicators/') //動作確認用テスト
 
     //appendFile("./test.html", latestDate)
     //console.log("saved html")
-    //console.log("resultData: ", resultData);
+    
+    console.log("resultData: ", resultWebData);
+
+    //console.log(eilist_json);
 
     browser.close()
   } catch(e) {
@@ -225,4 +246,13 @@ function appendFile(path, data) {
         throw err;
     }
   });
+}
+
+function analyzeData(WebData){
+
+
+
+
+
+  
 }

@@ -1,2 +1,5 @@
 #directory ignore
 node_modules/
+
+#file ignore
+eilist.json
