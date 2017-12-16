@@ -10,6 +10,7 @@
   "author": "sekined",
   "license": "ISC",
   "dependencies": {
+    "moment": "^2.19.4",
     "puppeteer": "^0.13.0"
   }
 }
