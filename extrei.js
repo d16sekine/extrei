@@ -5,11 +5,11 @@ const eilist_json = require("./eilist.json");
 
 PATH_ROOT = "./";
 
+//FilePath_Output = "./testlist.csv" //テスト用
+FilePath_Output = "C:/Users/Daisuke/AppData/Roaming/MetaQuotes/Terminal/3212703ED955F10C7534BE8497B221F4/MQL4/Files/EIdata.csv"
 // ################
 // ### issue
 // ################
-// ★FOMC1日目がある
-
 // ★日銀政策金利の処理
 // ★時間のないものを削除？
 
@@ -19,45 +19,10 @@ PATH_ROOT = "./";
 // ★時刻を扱える形式に変換(splitまで完了)
 // ★最終行に、今年の12月31日を追加
 // ★shortnameの差し替え
+// ★FOMC1日目がある => NGwordで解決
 
-//時刻配列の一括変換関数
-function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,開始日,終了月,終了日]
 
-  let retArray = [];
-  let now = moment();
-
-  for(let i = 0; i< DateArray.length; i++){
-    
-    var strdate = String(DateArray[i]);
-
-    //不要文字列の整形
-    strdate = strdate.replace(/\n/g,"");
-    strdate = strdate.replace(/ /g,"");
-
-    let array = strdate.split("日");
-
-    let year = now.year();
-    let month = now.month() + 1;
-    let day = array[0];
-
-    //指標日が開始日よりも小さい => 月またぎあり
-    if(day <= PeriodWeek[1]){
-      month += 1;
-
-      if(month == 13) month = 1;
-    }
-       
-    var strdate_arranged = year + "." + month + "." + array[0] + " " + array[1]; 
-
-    retArray.push(strdate_arranged)
-  
-  }
-   
-    return retArray;
-
-}
-
-//Webページにアクセスして、
+//Webページにアクセスして、コンテンツを解析
 async function getEIListWithDate(page, url){
   
   await page.goto(url,{waitUntil:"networkidle2"}); // ページへ移動
@@ -177,49 +142,6 @@ async function getEIListWithDate(page, url){
   return EIjson;
 }
 
-//テスト用関数　経済指標の名前だけListで返す（日付と連動しない）　動作確認OK
-async function getEIList(page, url){
-
-  await page.goto(url,{waitUntil:"networkidle2"}); // ページへ移動
-
-  const EIList = await page.evaluate(() => {
-    const node =document.querySelectorAll("td.Ttl ");
-    const array = [];
-    
-    for(item of node){
-        array.push(item.innerText);
-        console.log("item:",item.innerText);
-    }
-    return array;
-  });
-
-  return EIList;
-
-}
-
-//テスト用関数　ページのタイトルを抽出　動作確認OK
-async function getPageTitle(page, url){
-
-  console.log("start to get page");
-
-  await page.goto(url); // ページへ移動
-
-  console.log("finish to get page");
-
-  const titleText = await page.evaluate(() => {
-
-    const title = document.querySelector("title");
-
-    return title.innerText; // ページのtitleを返す
-
-  });
-
-  console.log("titleName: ",titleText);
-
-  return titleText;
-
-}
-  
 
 // main関数
 (async() => {
@@ -234,20 +156,57 @@ async function getPageTitle(page, url){
     //appendFile("./test.html", latestDate)
     //console.log("saved html")
     
-    console.log("resultData: ", resultWebData);
+    //console.log("resultData: ", resultWebData);
 
     const finalData = await analyzeWebData(resultWebData);
 
     //console.log(eilist_json);
     console.log(finalData);
 
-    await writeFinalData(finalData,"./test.csv")
+    await writeFinalData(finalData,FilePath_Output)
 
     browser.close()
   } catch(e) {
     console.error(e)
   }
 })()
+
+//時刻配列の一括変換関数
+function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,開始日,終了月,終了日]
+  
+    let retArray = [];
+    let now = moment();
+  
+    for(let i = 0; i< DateArray.length; i++){
+      
+      var strdate = String(DateArray[i]);
+  
+      //不要文字列の整形
+      strdate = strdate.replace(/\n/g,"");
+      strdate = strdate.replace(/ /g,"");
+  
+      let array = strdate.split("日");
+  
+      let year = now.year();
+      let month = now.month() + 1;
+      let day = array[0];
+  
+      //指標日が開始日よりも小さい => 月またぎあり
+      if(day <= PeriodWeek[1]){
+        month += 1;
+  
+        if(month == 13) month = 1;
+      }
+         
+      var strdate_arranged = year + "." + month + "." + array[0] + " " + array[1]; 
+  
+      retArray.push(strdate_arranged)
+    
+    }
+     
+      return retArray;
+  
+  }
 
 
 //時刻整形済みのWebデータと指標リストを比較し、書き出しデータを作成
@@ -262,6 +221,8 @@ function analyzeWebData(WebData){
     for(let j = 0; j < eilist_json.length; j++){
 
       if(String(WebData[i].name).indexOf(eilist_json[j].name) != -1 && WebData[i].currency == eilist_json[j].country){
+
+        if(eilist_json[j].NGwords != "" && String(WebData[i].name).indexOf(eilist_json[j].NGwords) != -1) continue;
 
         var hash = {"date": WebData[i].date, "currency": WebData[i].currency, "name": WebData[i].name, "rank": eilist_json[j].rank};
 
@@ -295,14 +256,17 @@ function writeFinalData(FinalData,filepath){
   
     }
 
+    //最後の1行に固定のデータを書き込み
     strData += moment().year() + ".12.31 23:59,S,JPY:End Of Data"
 
     writeFile(filepath, strData)
+
+    console.log(process.cwd())
   
   }
 
   
-//ファイルの追記関数
+//ファイル書き込み関数
 function writeFile(path, data) {
   fs.writeFile(path, data, function (err) {
     if (err) {
@@ -310,3 +274,49 @@ function writeFile(path, data) {
     }
   });
 }
+
+//-------------------------------------------------------------------------
+//テスト用関数　経済指標の名前だけListで返す（日付と連動しない）　動作確認OK
+async function getEIList(page, url){
+  
+    await page.goto(url,{waitUntil:"networkidle2"}); // ページへ移動
+  
+    const EIList = await page.evaluate(() => {
+      const node =document.querySelectorAll("td.Ttl ");
+      const array = [];
+      
+      for(item of node){
+          array.push(item.innerText);
+          console.log("item:",item.innerText);
+      }
+      return array;
+    });
+  
+    return EIList;
+  
+  }
+  
+  //テスト用関数　ページのタイトルを抽出　動作確認OK
+  async function getPageTitle(page, url){
+  
+    console.log("start to get page");
+  
+    await page.goto(url); // ページへ移動
+  
+    console.log("finish to get page");
+  
+    const titleText = await page.evaluate(() => {
+  
+      const title = document.querySelector("title");
+  
+      return title.innerText; // ページのtitleを返す
+  
+    });
+  
+    console.log("titleName: ",titleText);
+  
+    return titleText;
+  
+  }
+    
+  
