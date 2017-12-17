@@ -6,9 +6,9 @@ const eilist_json = require("./eilist.json");
 
 PATH_ROOT = "./";
 
-//FilePath_Output = "./testlist.csv" //テスト用
 FilePath_Home = "C:/Users/"
 FilePath_MT4 = "/AppData/Roaming/MetaQuotes/Terminal/3212703ED955F10C7534BE8497B221F4/MQL4/Files/EIdata.csv"
+
 // ################
 // ### issue
 // ################
