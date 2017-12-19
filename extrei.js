@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const moment = require('moment');
+const iconv = require('iconv-lite');
 const fs = require('fs');
 const os = require('os');
 const eilist_json = require("./eilist.json");
@@ -274,12 +275,20 @@ function writeFinalData(FinalData,filepath){
 
   
 //ファイル書き込み関数
+// function writeFile(path, data) {
+//   fs.writeFile(path, data, function (err) {
+//     if (err) {
+//         throw err;
+//     }
+//   });
+// }
+
+//ファイル書き込み関数
 function writeFile(path, data) {
-  fs.writeFile(path, data, function (err) {
-    if (err) {
-        throw err;
-    }
-  });
+
+  var writer = fs.createWriteStream(path);
+  writer.write(iconv.encode(data, "Shift_JIS"));
+
 }
 
 //-------------------------------------------------------------------------
