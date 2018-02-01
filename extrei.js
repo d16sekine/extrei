@@ -185,6 +185,7 @@ async function getEIListWithDate(page, url){
 function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,開始日,終了月,終了日]
   
     let retArray = [];
+
     let now = moment();
   
     for(let i = 0; i< DateArray.length; i++){
@@ -196,10 +197,16 @@ function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,�
       strdate = strdate.replace(/ /g,"");
   
       let array = strdate.split("日");
+
+      let yearDayArray = PeriodWeek[0].split("<br>");
   
       let year = now.year();
-      let month = now.month() + 1;
-      let day = array[0];
+      let month = Number(yearDayArray[1]);//now.month() + 1;
+      let day = Number(array[0]);
+
+      console.log("month:",month);
+      console.log("day:",day);
+      console.log("PeriodWeek[1]:",PeriodWeek[1]);
   
       //指標日が開始日よりも小さい => 月またぎあり
       if(day <= PeriodWeek[1]){
