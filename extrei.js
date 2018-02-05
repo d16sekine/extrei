@@ -209,7 +209,7 @@ function transformDateArray(DateArray, PeriodWeek) { //PeriodWeek = [開始月,�
       console.log("PeriodWeek[1]:",PeriodWeek[1]);
   
       //指標日が開始日よりも小さい => 月またぎあり
-      if(day <= PeriodWeek[1]){
+      if(day < PeriodWeek[1]){
         month += 1;
   
         if(month == 13) month = 1;
